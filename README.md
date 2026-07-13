@@ -2,9 +2,9 @@
 
 Team members:
 
-Vilhjalmur Jonsson
-Github username: runsoliv
-Umass email: vjonsson@umass.edu
+Vilhjalmur Jonsson  
+Github username: runsoliv  
+Umass email: vjonsson@umass.edu  
 
 Rishik Muthyala
 GitHub username: rishikmuthyala
