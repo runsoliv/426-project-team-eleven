@@ -6,9 +6,9 @@ Vilhjalmur Jonsson
 Github username: runsoliv  
 Umass email: vjonsson@umass.edu  
 
-Rishik Muthyala
-GitHub username: rishikmuthyala
-UMass email: rmuthyala@umass.edu
+Rishik Muthyala  
+GitHub username: rishikmuthyala  
+UMass email: rmuthyala@umass.edu  
 
 Project description: 
 
