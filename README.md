@@ -17,3 +17,28 @@ Our system simulates an emergency weather alert network that coordinates severe 
 - [Project](docs/PROJECT.md)
 - [Services](docs/SERVICES.md)
 - [Service Level Objectives](docs/SLO.md)
+
+
+## Run the system
+
+docker compose up 
+
+Test the incident report service (view reports)
+
+curl http://localhost:3001/reports
+
+Test the incident report service through the ambassador (send a report)
+
+curl -X POST http://localhost:4000/reports \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: incident-1001" \
+  -d '{
+    "region": "South Florida",
+    "hazardType": "flooding",
+    "location": "Miami Beach",
+    "description": "Flood water is blocking the road"
+  }'
+
+View ambassador logs
+
+docker compose logs incident-ambassador
