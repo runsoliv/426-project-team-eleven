@@ -21,3 +21,18 @@ services:
     depends_on:
       incident-report-service:
         condition: service_healthy
+
+  official-alert-service:
+    build: ./official-alert-service
+    ports:
+      - "3002:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      retries: 5
