@@ -42,3 +42,15 @@ curl -X POST http://localhost:4000/reports \
 View ambassador logs
 
 docker compose logs incident-ambassador
+
+Test the official alert service (view active alerts)
+
+curl http://localhost:3002/alerts
+
+Test the official alert service health check
+
+curl http://localhost:3002/health
+
+View official alert service logs
+
+docker compose logs official-alert-service
