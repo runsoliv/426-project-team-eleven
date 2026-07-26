@@ -1,0 +1,23 @@
+services:
+  incident-report-service:
+    build: ./incident-report-service
+    ports:
+      - "3001:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      retries: 5
+
+  incident-ambassador:
+    build: ./incident-ambassador
+    ports:
+      - "4000:4000"
+    depends_on:
+      incident-report-service:
+        condition: service_healthy
