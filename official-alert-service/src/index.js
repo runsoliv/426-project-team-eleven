@@ -8,8 +8,6 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const randomLatency = () => 150 + Math.random() * 350;
 
-const SEVERITIES = ["Minor", "Moderate", "Severe", "Extreme"];
-
 const ALERT_TEMPLATES = [
   {
     weatherType: "Hurricane",
@@ -20,14 +18,6 @@ const ALERT_TEMPLATES = [
     durationHours: 48,
   },
   {
-    weatherType: "Tornado",
-    severity: "Severe",
-    region: "Central Oklahoma",
-    message:
-      "Tornado Warning: Radar indicated rotation capable of producing a tornado. Take shelter now in a sturdy building away from windows.",
-    durationHours: 1,
-  },
-  {
     weatherType: "Flood",
     severity: "Severe",
     region: "Miami-Dade County",
@@ -36,49 +26,57 @@ const ALERT_TEMPLATES = [
     durationHours: 6,
   },
   {
-    weatherType: "Winter Storm",
-    severity: "Moderate",
-    region: "Western Massachusetts",
+    weatherType: "Storm Surge",
+    severity: "Extreme",
+    region: "Fort Lauderdale",
     message:
-      "Winter Storm Warning: Heavy snowfall of 8-12 inches expected. Travel could be very difficult, especially during evening commute.",
-    durationHours: 18,
+      "Storm Surge Warning: Life-threatening inundation from rising water is expected along the coast. Follow evacuation orders for low-lying areas.",
+    durationHours: 24,
+  },
+  {
+    weatherType: "Tropical Storm",
+    severity: "Moderate",
+    region: "Miami-Fort Lauderdale Area",
+    message:
+      "Tropical Storm Warning: Sustained winds of 40-70 mph expected. Secure loose outdoor objects and avoid unnecessary travel.",
+    durationHours: 12,
+  },
+  {
+    weatherType: "Tornado",
+    severity: "Severe",
+    region: "Dallas-Fort Worth",
+    message:
+      "Tornado Warning: Radar indicated rotation capable of producing a tornado. Take shelter now in a sturdy building away from windows.",
+    durationHours: 1,
   },
   {
     weatherType: "Thunderstorm",
     severity: "Moderate",
-    region: "Dallas-Fort Worth",
+    region: "North Texas",
     message:
       "Severe Thunderstorm Warning: Damaging winds up to 60 mph and quarter-size hail possible. Seek shelter indoors.",
     durationHours: 2,
   },
   {
-    weatherType: "Heat",
+    weatherType: "Flood",
     severity: "Moderate",
-    region: "Phoenix Metro Area",
+    region: "Fort Worth Metro Area",
     message:
-      "Excessive Heat Warning: Dangerously hot conditions with temperatures up to 115°F expected. Limit outdoor activity and stay hydrated.",
-    durationHours: 72,
+      "Flash Flood Warning: Slow-moving storms have produced heavy rainfall over the area. Do not drive through flooded roads.",
+    durationHours: 6,
   },
   {
-    weatherType: "Wildfire",
-    severity: "Extreme",
-    region: "Northern California",
-    message:
-      "Red Flag Warning: Critical fire weather conditions with low humidity and strong winds. Avoid any activity that could spark a fire.",
-    durationHours: 36,
-  },
-  {
-    weatherType: "Coastal Storm",
+    weatherType: "Tornado",
     severity: "Minor",
-    region: "Cape Cod",
+    region: "North Texas",
     message:
-      "Coastal Flood Advisory: Minor tidal flooding expected near coastal roads and low-lying property during high tide.",
-    durationHours: 12,
+      "Tornado Watch: Conditions are favorable for tornado development. Stay informed and be ready to take shelter.",
+    durationHours: 4,
   },
 ];
 
 const buildAlert = (template, index) => {
-  const issuedAt = new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 3);
+  const issuedAt = new Date(Date.now() - Math.random() * 1000 * 60 * 60);
   const expiresAt = new Date(
     issuedAt.getTime() + template.durationHours * 60 * 60 * 1000,
   );
@@ -94,6 +92,8 @@ const buildAlert = (template, index) => {
   };
 };
 
+const alerts = ALERT_TEMPLATES.map(buildAlert);
+
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
@@ -101,18 +101,12 @@ app.get("/health", (req, res) => {
 app.get("/alerts", async (req, res) => {
   await delay(randomLatency());
 
-  if (Math.random() < 0.03) {
-    return res.status(503).json({
-      error: "official alert service temporarily unavailable",
-    });
-  }
+  const now = Date.now();
+  const activeAlerts = alerts.filter(
+    (alert) => new Date(alert.expiresAt).getTime() > now,
+  );
 
-  const activeCount =
-    3 + Math.floor(Math.random() * (ALERT_TEMPLATES.length - 2));
-
-  const alerts = ALERT_TEMPLATES.slice(0, activeCount).map(buildAlert);
-
-  res.json({ alerts });
+  res.json({ alerts: activeAlerts });
 });
 
 app.listen(3000, () =>
