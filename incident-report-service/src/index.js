@@ -64,12 +64,6 @@ app.post("/reports", async (req, res) => {
 
   processedKeys.set(idempotencyKey, result);
 
-  if (Math.random() < 0.03) {
-    return res.status(503).json({
-      error: "incident report service temporarily unavailable",
-    });
-  }
-
   res.status(201).json(result);
 });
 
