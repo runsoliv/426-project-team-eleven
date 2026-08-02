@@ -22,10 +22,29 @@ services:
       incident-report-service:
         condition: service_healthy
 
-  official-alert-service:
+  official-alert-a:
     build: ./official-alert-service
     ports:
       - "3002:3000"
+    environment:
+      - REPLICA_LABEL=official-alert-a
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      retries: 5
+
+  official-alert-b:
+    build: ./official-alert-service
+    ports:
+      - "3003:3000"
+    environment:
+      - REPLICA_LABEL=official-alert-b
     healthcheck:
       test:
         [
