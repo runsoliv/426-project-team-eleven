@@ -24,8 +24,6 @@ services:
 
   official-alert-a:
     build: ./official-alert-service
-    ports:
-      - "3002:3000"
     environment:
       - REPLICA_LABEL=official-alert-a
     healthcheck:
@@ -41,8 +39,6 @@ services:
 
   official-alert-b:
     build: ./official-alert-service
-    ports:
-      - "3003:3000"
     environment:
       - REPLICA_LABEL=official-alert-b
     healthcheck:
@@ -55,3 +51,15 @@ services:
         ]
       interval: 5s
       retries: 5
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      official-alert-a:
+        condition: service_healthy
+      official-alert-b:
+        condition: service_healthy

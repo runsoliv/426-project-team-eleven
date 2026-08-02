@@ -1,0 +1,7 @@
+:3002 {
+  reverse_proxy official-alert-a:3000 official-alert-b:3000 {
+    lb_policy round_robin
+    health_uri /health
+    health_interval 2s
+  }
+}
