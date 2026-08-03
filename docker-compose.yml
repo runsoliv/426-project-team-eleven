@@ -22,10 +22,21 @@ services:
       incident-report-service:
         condition: service_healthy
 
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
   official-alert-a:
     build: ./official-alert-service
     environment:
       - REPLICA_LABEL=official-alert-a
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         [
@@ -41,6 +52,10 @@ services:
     build: ./official-alert-service
     environment:
       - REPLICA_LABEL=official-alert-b
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
       test:
         [

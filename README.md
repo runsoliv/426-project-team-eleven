@@ -47,10 +47,15 @@ Test the official alert service (view active alerts)
 
 curl http://localhost:3002/alerts
 
+Test the official alert service with Redis-backed region caching (first request is a cache miss, repeat requests within 30s are cache hits, `servedBy` shows which replica answered)
+
+curl "http://localhost:3002/alerts?region=North%20Texas"
+curl "http://localhost:3002/alerts?region=South%20Florida"
+
 Test the official alert service health check
 
 curl http://localhost:3002/health
 
 View official alert service logs
 
-docker compose logs official-alert-service
+docker compose logs official-alert-a official-alert-b
