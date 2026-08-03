@@ -59,3 +59,20 @@ curl http://localhost:3002/health
 View official alert service logs
 
 docker compose logs official-alert-a official-alert-b
+
+## Load testing (Sprint 3)
+
+Start the stack first (`docker compose up -d`), then run the k6 script from `load-tests/` against it. If you don't have `k6` installed locally, run it via Docker on the same compose network:
+
+docker run --rm \
+  --network 426-project-team-eleven-1_default \
+  -v "$(pwd)/load-tests:/scripts" \
+  -e ALERTS_URL=http://caddy:3002 \
+  -e AMBASSADOR_URL=http://incident-ambassador:4000 \
+  grafana/k6 run /scripts/sprint-3-load.js
+
+Or, if `k6` is installed locally and the stack's ports are published to the host:
+
+k6 run load-tests/sprint-3-load.js
+
+See [`results/sprint-3-load-test.md`](results/sprint-3-load-test.md) for the latest report (latency percentiles, error rate, cache hit rate, and SLO comparisons for both services).
