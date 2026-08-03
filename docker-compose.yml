@@ -71,10 +71,22 @@ services:
     image: caddy:2
     ports:
       - "3002:3002"
-    volumes:
-      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    configs:
+      - source: caddy_config
+        target: /etc/caddy/Caddyfile
     depends_on:
       official-alert-a:
         condition: service_healthy
       official-alert-b:
         condition: service_healthy
+
+configs:
+  caddy_config:
+    content: |
+      :3002 {
+        reverse_proxy official-alert-a:3000 official-alert-b:3000 {
+          lb_policy round_robin
+          health_uri /health
+          health_interval 2s
+        }
+      }
