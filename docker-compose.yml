@@ -29,6 +29,20 @@ services:
       interval: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: alerts
+      RABBITMQ_DEFAULT_PASS: alerts
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   official-alert-a:
     build: ./official-alert-service
     environment:
