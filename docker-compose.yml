@@ -48,6 +48,14 @@ services:
       timeout: 5s
       retries: 10
 
+  notification-worker:
+    build: ./notification-worker
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
   official-alert-a:
     build: ./official-alert-service
     environment:

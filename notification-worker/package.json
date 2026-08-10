@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "dependencies": {
+    "amqplib": "^0.10.4"
+  }
+}
