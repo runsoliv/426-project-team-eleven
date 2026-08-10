@@ -1,8 +1,13 @@
 services:
   incident-report-service:
     build: ./incident-report-service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
     ports:
       - "3001:3000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test:
         [

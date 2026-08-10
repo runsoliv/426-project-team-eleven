@@ -1,4 +1,5 @@
 import express from "express";
+import amqp from "amqplib";
 
 const app = express();
 
@@ -6,6 +7,15 @@ app.use(express.json());
 
 const reports = [];
 const processedKeys = new Map();
+
+const QUEUE = "incident-notifications";
+const RABBITMQ_HOST = process.env.RABBITMQ_HOST || "localhost";
+
+const connection = await amqp.connect(
+  `amqp://alerts:alerts@${RABBITMQ_HOST}:5672`,
+);
+const channel = await connection.createChannel();
+await channel.assertQueue(QUEUE, { durable: true });
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -56,6 +66,11 @@ app.post("/reports", async (req, res) => {
   };
 
   reports.push(report);
+
+  channel.sendToQueue(QUEUE, Buffer.from(JSON.stringify(report)), {
+    persistent: true,
+  });
+  console.log(`enqueued incident ${report.id}`);
 
   const result = {
     status: "recorded",
