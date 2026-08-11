@@ -17,6 +17,7 @@ Our system simulates an emergency weather alert network that coordinates severe 
 - [Project](docs/PROJECT.md)
 - [Services](docs/SERVICES.md)
 - [Service Level Objectives](docs/SLO.md)
+- [Failure Scenarios](docs/FAILURE_SCENARIOS.md)
 
 
 ## Run the system
@@ -59,6 +60,14 @@ curl http://localhost:3002/health
 View official alert service logs
 
 docker compose logs official-alert-a official-alert-b
+
+Test the notification worker's health (RabbitMQ connection, queue depth, processed count)
+
+curl http://localhost:3003/health
+
+Simulate a slow notification worker to see the queue back up (see [`docs/FAILURE_SCENARIOS.md`](docs/FAILURE_SCENARIOS.md))
+
+WORKER_DELAY_MODE=true docker compose up -d notification-worker
 
 ## Load testing (Sprint 3)
 

@@ -64,6 +64,9 @@ services:
       - "3003:3000"
     environment:
       - RABBITMQ_HOST=rabbitmq
+      # Failure-injection toggle, see docs/FAILURE_SCENARIOS.md. Override with
+      # WORKER_DELAY_MODE=true docker compose up -d notification-worker
+      - WORKER_DELAY_MODE=${WORKER_DELAY_MODE:-false}
     depends_on:
       rabbitmq:
         condition: service_healthy
