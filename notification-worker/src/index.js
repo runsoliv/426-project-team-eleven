@@ -7,7 +7,7 @@ const QUEUE = "incident-notifications";
 const RABBITMQ_HOST = process.env.RABBITMQ_HOST || "localhost";
 const PORT = 3000;
 
-// Failure-injection toggle: see docs/FAILURE_SCENARIOS.md. Simulates a
+// Failure-injection toggle: see results/sprint-4-failure.md. Simulates a
 // worker that has fallen behind (e.g. a slow downstream notification
 // provider) instead of the normal near-instant processing time.
 const DELAY_MODE_ENABLED = process.env.WORKER_DELAY_MODE === "true";
