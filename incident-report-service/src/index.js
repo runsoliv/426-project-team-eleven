@@ -1,9 +1,41 @@
 import express from "express";
+import client from "prom-client";
 import amqp from "amqplib";
 
 const app = express();
 
 app.use(express.json());
+
+const httpRequestsTotal = new client.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests received",
+  labelNames: ["method", "route", "status_code"],
+});
+
+const httpRequestDuration = new client.Histogram({
+  name: "http_request_duration_ms",
+  help: "HTTP request duration in milliseconds",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000],
+});
+
+app.use((req, res, next) => {
+  const start = process.hrtime.bigint();
+
+  res.on("finish", () => {
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+    const labels = {
+      method: req.method,
+      route: req.path,
+      status_code: res.statusCode,
+    };
+
+    httpRequestsTotal.inc(labels);
+    httpRequestDuration.observe(labels, durationMs);
+  });
+
+  next();
+});
 
 const reports = [];
 const processedKeys = new Map();
@@ -80,6 +112,11 @@ app.post("/reports", async (req, res) => {
   processedKeys.set(idempotencyKey, result);
 
   res.status(201).json(result);
+});
+
+app.get("/metrics", async (req, res) => {
+  res.set("Content-Type", client.register.contentType);
+  res.end(await client.register.metrics());
 });
 
 app.listen(3000, () =>

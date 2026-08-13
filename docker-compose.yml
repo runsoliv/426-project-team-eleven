@@ -55,7 +55,7 @@ services:
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity"]
       interval: 5s
-      timeout: 5s
+      timeout: 30s
       retries: 10
 
   notification-worker:
@@ -143,6 +143,19 @@ services:
         ]
       interval: 5s
       retries: 5
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - incident-report-service
+      - incident-ambassador
+      - notification-worker
+      - official-alert-a
+      - official-alert-b
 
 configs:
   caddy_config:

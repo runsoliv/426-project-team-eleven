@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: "incident-report-service"
+    static_configs:
+      - targets: ["incident-report-service:3000"]
+
+  - job_name: "incident-ambassador"
+    static_configs:
+      - targets: ["incident-ambassador:4000"]
+
+  - job_name: "notification-worker"
+    static_configs:
+      - targets: ["notification-worker:3000"]
+
+  - job_name: "official-alert-service"
+    static_configs:
+      - targets: ["official-alert-a:3000", "official-alert-b:3000"]
