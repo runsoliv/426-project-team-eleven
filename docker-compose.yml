@@ -157,6 +157,20 @@ services:
       - official-alert-a
       - official-alert-b
 
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    configs:
+      - source: grafana_datasource
+        target: /etc/grafana/provisioning/datasources/prometheus.yml
+      - source: grafana_dashboard_provider
+        target: /etc/grafana/provisioning/dashboards/dashboard.yml
+    volumes:
+      - ./grafana/provisioning/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+
 configs:
   caddy_config:
     content: |
@@ -167,3 +181,25 @@ configs:
           health_interval 2s
         }
       }
+
+  grafana_datasource:
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          uid: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+
+  grafana_dashboard_provider:
+    content: |
+      apiVersion: 1
+      providers:
+        - name: system-overview
+          type: file
+          disableDeletion: false
+          allowUiUpdates: false
+          options:
+            path: /var/lib/grafana/dashboards
