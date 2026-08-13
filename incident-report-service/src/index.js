@@ -6,6 +6,17 @@ const app = express();
 
 app.use(express.json());
 
+const log = (level, message, fields = {}) => {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...fields,
+    }),
+  );
+};
+
 const httpRequestsTotal = new client.Counter({
   name: "http_requests_total",
   help: "Total number of HTTP requests received",
@@ -32,6 +43,13 @@ app.use((req, res, next) => {
 
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, durationMs);
+
+    log("info", "request", {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      responseTimeMs: durationMs,
+    });
   });
 
   next();
@@ -102,7 +120,8 @@ app.post("/reports", async (req, res) => {
   channel.sendToQueue(QUEUE, Buffer.from(JSON.stringify(report)), {
     persistent: true,
   });
-  console.log(`enqueued incident ${report.id}`);
+
+  log("info", "incident enqueued", { incidentId: report.id });
 
   const result = {
     status: "recorded",
@@ -120,5 +139,5 @@ app.get("/metrics", async (req, res) => {
 });
 
 app.listen(3000, () =>
-  console.log("Incident report service listening on port 3000"),
+  log("info", "Incident report service listening on port 3000"),
 );

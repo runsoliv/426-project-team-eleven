@@ -17,6 +17,17 @@ const DELAY_MODE_PROCESSING_MS = [4000, 8000];
 
 const randomBetween = ([min, max]) => min + Math.random() * (max - min);
 
+const log = (level, message, fields = {}) => {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...fields,
+    }),
+  );
+};
+
 let rabbitmqStatus = "connecting";
 let processedCount = 0;
 let lastProcessedAt = null;
@@ -26,12 +37,15 @@ const connection = await amqp.connect(
 );
 
 connection.on("error", (err) => {
-  console.error(`worker ${workerId} RabbitMQ connection error`, err.message);
+  log("error", "RabbitMQ connection error", {
+    workerId,
+    error: err.message,
+  });
   rabbitmqStatus = "disconnected";
 });
 
 connection.on("close", () => {
-  console.error(`worker ${workerId} RabbitMQ connection closed`);
+  log("error", "RabbitMQ connection closed", { workerId });
   rabbitmqStatus = "disconnected";
 });
 
@@ -40,15 +54,20 @@ await channel.assertQueue(QUEUE, { durable: true });
 channel.prefetch(1);
 rabbitmqStatus = "connected";
 
-console.log(
-  `worker ${workerId} waiting for jobs${DELAY_MODE_ENABLED ? " [delay mode enabled]" : ""}`,
-);
+log("info", "worker waiting for jobs", {
+  workerId,
+  delayMode: DELAY_MODE_ENABLED,
+});
 
 channel.consume(QUEUE, async (msg) => {
   if (msg === null) return;
 
   const report = JSON.parse(msg.content.toString());
-  console.log(`worker ${workerId} processing incident ${report.id}`);
+
+  log("info", "processing incident", {
+    workerId,
+    incidentId: report.id,
+  });
 
   const processingMs = DELAY_MODE_ENABLED
     ? randomBetween(DELAY_MODE_PROCESSING_MS)
@@ -59,11 +78,12 @@ channel.consume(QUEUE, async (msg) => {
   processedCount += 1;
   lastProcessedAt = new Date().toISOString();
 
-  console.log(
-    `worker ${workerId} sent notification for incident ${report.id}${
-      DELAY_MODE_ENABLED ? " [delay mode]" : ""
-    }`,
-  );
+  log("info", "notification sent", {
+    workerId,
+    incidentId: report.id,
+    delayMode: DELAY_MODE_ENABLED,
+  });
+
   channel.ack(msg);
 });
 
@@ -95,6 +115,13 @@ app.use((req, res, next) => {
 
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, durationMs);
+
+    log("info", "request", {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      responseTimeMs: durationMs,
+    });
   });
 
   next();
@@ -130,5 +157,8 @@ app.get("/metrics", async (req, res) => {
 });
 
 app.listen(PORT, () =>
-  console.log(`worker ${workerId} health endpoint listening on port ${PORT}`),
+  log("info", "worker health endpoint listening", {
+    workerId,
+    port: PORT,
+  }),
 );

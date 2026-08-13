@@ -5,6 +5,17 @@ const app = express();
 
 app.use(express.json());
 
+const log = (level, message, fields = {}) => {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...fields,
+    }),
+  );
+};
+
 const httpRequestsTotal = new client.Counter({
   name: "http_requests_total",
   help: "Total number of HTTP requests received",
@@ -31,6 +42,13 @@ app.use((req, res, next) => {
 
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, durationMs);
+
+    log("info", "request", {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      responseTimeMs: durationMs,
+    });
   });
 
   next();
@@ -62,8 +80,6 @@ const forwardTo = async (path, options, res) => {
 };
 
 app.get("/health", async (req, res) => {
-  console.log(`${req.method} ${req.url} ${new Date().toISOString()}`);
-
   await forwardTo(
     "/health",
     {
@@ -74,8 +90,6 @@ app.get("/health", async (req, res) => {
 });
 
 app.get("/reports", async (req, res) => {
-  console.log(`${req.method} ${req.url} ${new Date().toISOString()}`);
-
   await forwardTo(
     "/reports",
     {
@@ -86,8 +100,6 @@ app.get("/reports", async (req, res) => {
 });
 
 app.post("/reports", async (req, res) => {
-  console.log(`${req.method} ${req.url} ${new Date().toISOString()}`);
-
   await forwardTo(
     "/reports",
     {
@@ -108,5 +120,5 @@ app.get("/metrics", async (req, res) => {
 });
 
 app.listen(4000, () =>
-  console.log("Incident ambassador listening on port 4000"),
+  log("info", "Incident ambassador listening on port 4000"),
 );

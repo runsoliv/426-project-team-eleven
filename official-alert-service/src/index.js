@@ -6,6 +6,17 @@ const app = express();
 
 app.use(express.json());
 
+const log = (level, message, fields = {}) => {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...fields,
+    }),
+  );
+};
+
 const httpRequestsTotal = new client.Counter({
   name: "http_requests_total",
   help: "Total number of HTTP requests received",
@@ -32,6 +43,13 @@ app.use((req, res, next) => {
 
     httpRequestsTotal.inc(labels);
     httpRequestDuration.observe(labels, durationMs);
+
+    log("info", "request", {
+      method: req.method,
+      path: req.path,
+      statusCode: res.statusCode,
+      responseTimeMs: durationMs,
+    });
   });
 
   next();
@@ -42,17 +60,30 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 const CACHE_TTL_SECONDS = Number(process.env.CACHE_TTL_SECONDS) || 30;
 
 const redisClient = createClient({ url: REDIS_URL });
-redisClient.on("error", (err) => console.error("Redis client error", err));
+
+redisClient.on("error", (err) =>
+  log("error", "Redis client error", {
+    replica: REPLICA_LABEL,
+    error: err.message,
+  }),
+);
 
 let redisReady = false;
+
 redisClient
   .connect()
   .then(() => {
     redisReady = true;
-    console.log(`${REPLICA_LABEL} connected to Redis at ${REDIS_URL}`);
+    log("info", "connected to Redis", {
+      replica: REPLICA_LABEL,
+      redisUrl: REDIS_URL,
+    });
   })
   .catch((err) => {
-    console.error(`${REPLICA_LABEL} failed to connect to Redis`, err);
+    log("error", "failed to connect to Redis", {
+      replica: REPLICA_LABEL,
+      error: err.message,
+    });
   });
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -260,7 +291,10 @@ app.get("/alerts", async (req, res) => {
         });
       }
     } catch (err) {
-      console.error(`${REPLICA_LABEL} Redis GET failed`, err);
+      log("error", "Redis GET failed", {
+        replica: REPLICA_LABEL,
+        error: err.message,
+      });
     }
   }
 
@@ -274,7 +308,10 @@ app.get("/alerts", async (req, res) => {
         EX: CACHE_TTL_SECONDS,
       });
     } catch (err) {
-      console.error(`${REPLICA_LABEL} Redis SET failed`, err);
+      log("error", "Redis SET failed", {
+        replica: REPLICA_LABEL,
+        error: err.message,
+      });
     }
   }
 
@@ -292,5 +329,7 @@ app.get("/metrics", async (req, res) => {
 });
 
 app.listen(3000, () =>
-  console.log(`Official alert service (${REPLICA_LABEL}) listening on port 3000`),
+  log("info", "Official alert service listening on port 3000", {
+    replica: REPLICA_LABEL,
+  }),
 );
