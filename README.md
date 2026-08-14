@@ -17,7 +17,9 @@ UMass email: rmuthyala@umass.edu
 Requirements
 
 Git
+
 Docker Desktop or Docker Engine with Docker Compose
+
 k6 if the final load test will run without Docker
 
 Setup
@@ -40,13 +42,21 @@ All services with a health check should show healthy. Prometheus and Grafana sho
 Service addresses
 
 Grafana: http://localhost:3000
+
 Incident report service: http://localhost:3001
+
 Official alert service through Caddy: http://localhost:3002
+
 Notification worker health endpoint: http://localhost:3003/health
+
 Incident ambassador: http://localhost:4000
+
 Prometheus: http://localhost:9090
+
 RabbitMQ management page: http://localhost:15672
+
 RabbitMQ username: alerts
+
 RabbitMQ password: alerts
 
 Grafana uses the default first login username admin and password admin. The Prometheus data source and system dashboard load automatically.
@@ -55,23 +65,59 @@ Environment variables
 
 Docker Compose provides the required service values. No environment file is required for normal startup.
 
-RABBITMQ_HOST: RabbitMQ host used by the report service and notification worker. Docker Compose uses rabbitmq. The direct run default is localhost.
+RABBITMQ_HOST
 
-RABBITMQ_DEFAULT_USER: RabbitMQ username. Docker Compose uses alerts.
+Purpose: RabbitMQ host used by the report service and notification worker.
+Development value: rabbitmq
+If missing: The code uses localhost. This does not work between the separate Docker containers, so the report service and worker cannot connect.
 
-RABBITMQ_DEFAULT_PASS: RabbitMQ password. Docker Compose uses alerts.
+RABBITMQ_DEFAULT_USER
 
-WORKER_DELAY_MODE: Enables the slow worker failure simulation when set to true. The default is false.
+Purpose: Creates the RabbitMQ username used by the report service and notification worker.
+Development value: alerts
+If missing: RabbitMQ does not create the expected alerts user, so the report service and worker cannot authenticate.
 
-REPLICA_LABEL: Name returned by each official alert replica. Docker Compose uses official-alert-a and official-alert-b.
+RABBITMQ_DEFAULT_PASS
 
-REDIS_URL: Redis connection address used by the official alert service. Docker Compose uses redis://redis:6379. The direct run default is redis://localhost:6379.
+Purpose: Creates the RabbitMQ password used by the report service and notification worker.
+Development value: alerts
+If missing: RabbitMQ does not create the expected alerts password, so the report service and worker cannot authenticate.
 
-CACHE_TTL_SECONDS: Alert cache lifetime in seconds. The default is 30.
+WORKER_DELAY_MODE
 
-ALERTS_URL: Official alert base address used by the k6 test. The default is http://localhost:3002.
+Purpose: Enables the slow worker failure simulation.
+Development value: false
+If missing: The worker uses false and processes jobs normally.
 
-AMBASSADOR_URL: Incident ambassador base address used by the k6 test. The default is http://localhost:4000.
+REPLICA_LABEL
+
+Purpose: Identifies which official alert replica handled a request.
+Development values: official-alert-a and official-alert-b
+If missing: The service uses official-alert-single.
+
+REDIS_URL
+
+Purpose: Redis connection address used by the official alert service.
+Development value: redis://redis:6379
+If missing: The code uses redis://localhost:6379. In Docker this cannot reach the separate Redis container, so alert caching is unavailable.
+
+CACHE_TTL_SECONDS
+
+Purpose: Sets the alert cache lifetime in seconds.
+Development value: 30
+If missing: The service uses 30 seconds.
+
+ALERTS_URL
+
+Purpose: Official alert base address used by the k6 test.
+Development value: http://localhost:3002
+If missing: The k6 test uses http://localhost:3002.
+
+AMBASSADOR_URL
+
+Purpose: Incident ambassador base address used by the k6 test.
+Development value: http://localhost:4000
+If missing: The k6 test uses http://localhost:4000.
 
 Run the system
 
@@ -131,7 +177,11 @@ Return the worker to normal mode:
 Documentation
 
 Project description: [docs/PROJECT.md](docs/PROJECT.md)
+
 Complete service diagram: [docs/SERVICES.md](docs/SERVICES.md)
+
 Service level objectives: [docs/SLO.md](docs/SLO.md)
+
 Sprint 4 failure report: [results/sprint-4-failure.md](results/sprint-4-failure.md)
+
 Sprint 5 load test report: [results/sprint-5-load-test.md](results/sprint-5-load-test.md)
