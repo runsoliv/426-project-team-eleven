@@ -1,87 +1,137 @@
-# 426-project-team-eleven
+426 Project Team Eleven
 
-Team members:
+Overview
 
-Vilhjalmur Jonsson  
-Github username: runsoliv  
-Umass email: vjonsson@umass.edu  
+This project is an emergency weather alert system. It serves official alerts through two load balanced replicas, accepts incident reports through an ambassador, sends report events through RabbitMQ to a notification worker, and stores alert cache data in Redis. Prometheus collects service metrics and Grafana loads the system dashboard automatically.
 
-Rishik Muthyala  
-GitHub username: rishikmuthyala  
-UMass email: rmuthyala@umass.edu  
+Team members
 
-Our system simulates an emergency weather alert network that coordinates severe weather warnings, emergency shelters, and community notifications during natural disasters such as hurricanes, tornadoes, and floods. A single server cannot handle the surge in requests and alerts during large scale emergencies when thousands of residents need real time information at once. Emergency responders and the public are directly affected when the system is slow or unavailable and delayed or inaccurate alerts can prevent people from reaching safety and coordinating an effective response.  
+Vilhjalmur Jonsson
+GitHub username: runsoliv
+UMass email: vjonsson@umass.edu
 
-## Documentation
+Rishik Muthyala
+GitHub username: rishikmuthyala
+UMass email: rmuthyala@umass.edu
 
-- [Project](docs/PROJECT.md)
-- [Services](docs/SERVICES.md)
-- [Service Level Objectives](docs/SLO.md)
-- [Failure Scenarios](results/sprint-4-failure.md)
+Requirements
 
+Git
+Docker Desktop or Docker Engine with Docker Compose
+k6 if the final load test will run without Docker
 
-## Run the system
+Setup
 
-docker compose up 
+Clone the repository and enter the project directory:
 
-Test the incident report service (view reports)
+    git clone https://github.com/runsoliv/426-project-team-eleven.git
+    cd 426-project-team-eleven
 
-curl http://localhost:3001/reports
+Build and start the complete system:
 
-Test the incident report service through the ambassador (send a report)
+    docker compose up
 
-curl -X POST http://localhost:4000/reports \
-  -H "Content-Type: application/json" \
-  -H "Idempotency-Key: incident-1001" \
-  -d '{
-    "region": "South Florida",
-    "hazardType": "flooding",
-    "location": "Miami Beach",
-    "description": "Flood water is blocking the road"
-  }'
+Check the containers:
 
-View ambassador logs
+    docker compose ps
 
-docker compose logs incident-ambassador
+All services with a health check should show healthy. Prometheus and Grafana should show running.
 
-Test the official alert service (view active alerts)
+Service addresses
 
-curl http://localhost:3002/alerts
+Grafana: http://localhost:3000
+Incident report service: http://localhost:3001
+Official alert service through Caddy: http://localhost:3002
+Notification worker health endpoint: http://localhost:3003/health
+Incident ambassador: http://localhost:4000
+Prometheus: http://localhost:9090
+RabbitMQ management page: http://localhost:15672
+RabbitMQ username: alerts
+RabbitMQ password: alerts
 
-Test the official alert service with Redis-backed region caching (first request is a cache miss, repeat requests within 30s are cache hits, `servedBy` shows which replica answered)
+Grafana uses the default first login username admin and password admin. The Prometheus data source and system dashboard load automatically.
 
-curl "http://localhost:3002/alerts?region=North%20Texas"
-curl "http://localhost:3002/alerts?region=South%20Florida"
+Environment variables
 
-Test the official alert service health check
+Docker Compose provides the required service values. No environment file is required for normal startup.
 
-curl http://localhost:3002/health
+RABBITMQ_HOST: RabbitMQ host used by the report service and notification worker. Docker Compose uses rabbitmq. The direct run default is localhost.
 
-View official alert service logs
+RABBITMQ_DEFAULT_USER: RabbitMQ username. Docker Compose uses alerts.
 
-docker compose logs official-alert-a official-alert-b
+RABBITMQ_DEFAULT_PASS: RabbitMQ password. Docker Compose uses alerts.
 
-Test the notification worker's health (RabbitMQ connection, queue depth, processed count)
+WORKER_DELAY_MODE: Enables the slow worker failure simulation when set to true. The default is false.
 
-curl http://localhost:3003/health
+REPLICA_LABEL: Name returned by each official alert replica. Docker Compose uses official-alert-a and official-alert-b.
 
-Simulate a slow notification worker to see the queue back up (see [`results/sprint-4-failure.md`](results/sprint-4-failure.md))
+REDIS_URL: Redis connection address used by the official alert service. Docker Compose uses redis://redis:6379. The direct run default is redis://localhost:6379.
 
-WORKER_DELAY_MODE=true docker compose up -d notification-worker
+CACHE_TTL_SECONDS: Alert cache lifetime in seconds. The default is 30.
 
-## Load testing (Sprint 3)
+ALERTS_URL: Official alert base address used by the k6 test. The default is http://localhost:3002.
 
-Start the stack first (`docker compose up -d`), then run the k6 script from `load-tests/` against it. If you don't have `k6` installed locally, run it via Docker on the same compose network:
+AMBASSADOR_URL: Incident ambassador base address used by the k6 test. The default is http://localhost:4000.
 
-docker run --rm \
-  --network 426-project-team-eleven-1_default \
-  -v "$(pwd)/load-tests:/scripts" \
-  -e ALERTS_URL=http://caddy:3002 \
-  -e AMBASSADOR_URL=http://incident-ambassador:4000 \
-  grafana/k6 run /scripts/sprint-3-load.js
+Run the system
 
-Or, if `k6` is installed locally and the stack's ports are published to the host:
+Start the complete system:
 
-k6 run load-tests/sprint-3-load.js
+    docker compose up
 
-See [`results/sprint-3-load-test.md`](results/sprint-3-load-test.md) for the latest report (latency percentiles, error rate, cache hit rate, and SLO comparisons for both services).
+Follow all service logs:
+
+    docker compose logs -f
+
+Stop the system:
+
+    docker compose down
+
+Basic tests
+
+Get official alerts through Caddy:
+
+    curl "http://localhost:3002/alerts?region=North%20Texas"
+
+Send an incident report through the ambassador:
+
+    curl -X POST http://localhost:4000/reports -H "Content-Type: application/json" -H "Idempotency-Key: incident-1001" -d '{"region":"South Florida","hazardType":"flooding","location":"Miami Beach","description":"Flood water is blocking the road"}'
+
+Check the health endpoints:
+
+    curl http://localhost:3001/health
+    curl http://localhost:3002/health
+    curl http://localhost:3003/health
+    curl http://localhost:4000/health
+
+Final load test
+
+Start the complete system before running the test. The Sprint 5 test uses 12 virtual users for 60 seconds and exercises official alerts and incident reports.
+
+Run with a local k6 installation:
+
+    k6 run load-tests/sprint-5-load.js
+
+Run with the k6 Docker image:
+
+    docker run --rm --network 426-project-team-eleven_default -v "$PWD/load-tests:/scripts:ro" -e ALERTS_URL=http://caddy:3002 -e AMBASSADOR_URL=http://incident-ambassador:4000 grafana/k6 run /scripts/sprint-5-load.js
+
+The final interpretation is in [results/sprint-5-load-test.md](results/sprint-5-load-test.md). The saved command output is in [results/sprint-5-load-test-raw-output.txt](results/sprint-5-load-test-raw-output.txt).
+
+Failure test
+
+Enable the slow notification worker:
+
+    WORKER_DELAY_MODE=true docker compose up -d notification-worker
+
+Return the worker to normal mode:
+
+    WORKER_DELAY_MODE=false docker compose up -d notification-worker
+
+Documentation
+
+Project description: [docs/PROJECT.md](docs/PROJECT.md)
+Complete service diagram: [docs/SERVICES.md](docs/SERVICES.md)
+Service level objectives: [docs/SLO.md](docs/SLO.md)
+Sprint 4 failure report: [results/sprint-4-failure.md](results/sprint-4-failure.md)
+Sprint 5 load test report: [results/sprint-5-load-test.md](results/sprint-5-load-test.md)
